@@ -1,54 +1,77 @@
 import win32com.client as win32
 from tkinter import filedialog
-import re
 
-## CREATING EXCEL INSTANCE
+## CREAT EXCEL INSTANCE
 excel = win32.Dispatch('Excel.Application')
 excel.Visible = True
 print('Choose Excel file...')
 workbook_name = filedialog.askopenfilename()
-workbook = excel.Workbooks.Open(Filename=workbook_name)
+workbook = excel.Workbooks.Open(Filename=f'"{workbook_name}"')
 
-## CREATING POWERPOINT INSTANCE
+## CREAT POWERPOINT INSTANCE
 ppt = win32.Dispatch('Powerpoint.Application')
 ppt.Visible = True
 presentation_name = filedialog.askopenfilename()
-presentation = ppt.Presentations.Open(FileName=presentation_name)
+presentation = ppt.Presentations.Open(FileName=f'"{presentation_name}"')
+slides = presentation.Slides
 
-## SELECT SHEETS AND EXTRACT SLIDE NUMBER FROM SHEET
-# for sheet in workbook.Sheets:
-#     if 'RD' not in sheet.Name:
-#         print(sheet.Name)
-#         name_split = sheet.Name.replace('-','').split()
-#         for i in name_split:
-#             if i.isdigit():
-#                 slide_nmbr = int(i)
-#                 break
-#         print(sheet.Name, slide_nmbr)
-#         del slide_nmbr
+## LOOP THROUGH NAMED RANGES AND INSERT IN PRESENTATION
+for namedrange in workbook.Names:
+    rangename = namedrange.Name
+    rangeref = namedrange.Value
+    sheetname = rangeref.replace('=','').split('!')[0]
+    if 'RD' not in sheetname:
+        name_split = sheetname.replace('-','').split()
+        for i in name_split:
+            if i.isdigit():
+                slide_nmbr = int(i)
+                break
+    excel.Range(rangename).CopyPicture()
+    shape = slides[slide_nmbr-1].Shapes.Paste()
+    shape.left, shape.top = 25, 160
+    del slide_nmbr
+
+## LOOP THROUGH SHEETS, FIND GRAPHS AND INSERT IN PRESENTATION
+for sheet in workbook.Sheets:
+    if 'RD' not in sheet.Name:
+        print(sheet.Name)
+        name_split = sheet.Name.replace('-','').split()
+        for i in name_split:
+            if i.isdigit():
+                slide_nmbr = int(i)
+                break
+        charts = sheet.ChartObjects()
+        for chart in charts:
+            chart.CopyPicture()
+            shape = slides[slide_nmbr-1].Shapes.Paste()
+            shape.left, shape.top = 25, 160
+        del slide_nmbr
+
+
+
+
+
+
+
 
 ## INSERT ON SLIDE NUMBER
-slides = presentation.Slides
-i=0
-for namedrange in workbook.Names:
-    i += 1
-    excel.Range(namedrange.Name).CopyPicture()
-    shape = slides[i].Shapes.Paste()
-    shape.left, shape.top = 10, 50
-
-
-
-
-
-
-
+# slides = presentation.Slides
+# i=0
 # for namedrange in workbook.Names:
-#     print(namedrange.Name)
+#     i += 1
 #     excel.Range(namedrange.Name).CopyPicture()
-#     new_slide = presentation.Slides.Add(Index = 2, Layout = 12)
-#     shape =new_slide.Shapes.Paste()
+#     shape = slides[i].Shapes.Paste()
 #     shape.left, shape.top = 10, 50
-#     # shape = new_slide.Shapes.PasteSpecial(DataType = 10, Link = False)
+
+
+
+# for sheet in workbook.Sheets:
+#     print(sheet.Name)
+#     for rng in sheet.Names:
+#         print(rng.Name)
+
+
+# new_slide = presentation.Slides.Add(Index = 2, Layout = 12)
 
 
 ## SAVE AND CLOSE
